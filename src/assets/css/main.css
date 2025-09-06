@@ -1,0 +1,68 @@
+/* src/assets/css/main.css */
+
+/* ... (các style global hiện có) ... */
+
+/* ---------------------------------- */
+/* RESPONSIVE STYLES FOR LARGE SCREENS */
+/* ---------------------------------- */
+
+@media (min-width: 1200px) {
+    /* Giao diện cho PC và màn hình lớn */
+
+    /* Tăng kích thước font chữ cho dễ đọc hơn */
+    body, p, table {
+        font-size: 10px;
+    }
+
+    /* Điều chỉnh khoảng cách và kích thước container */
+    .v-container.fluid {
+        max-width: 1400px;
+    }
+
+    /* Nâng cấp độ bóng của các phần tử để nổi bật hơn */
+    .report-element {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Hiệu ứng hover mạnh hơn */
+    .report-element:hover {
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Tùy chỉnh kích thước sidebar */
+    .v-navigation-drawer--left {
+        width: 280px !important;
+    }
+
+    .v-navigation-drawer--right {
+        width: 400px !important;
+    }
+
+    /* Điều chỉnh các phần tử cụ thể trong sidebar phải */
+    .v-toolbar__title {
+        font-size: 1.0rem;
+    }
+}
+
+/* ---------------------------------- */
+/* RESPONSIVE STYLES FOR TABLETS AND LAPTOPS */
+/* ---------------------------------- */
+
+@media (min-width: 768px) and (max-width: 1199px) {
+    /* Giao diện cho máy tính bảng và laptop cỡ nhỏ */
+
+    /* Giữ kích thước font tiêu chuẩn */
+    body, p, table {
+        font-size: 10px;
+    }
+
+    /* Giảm khoảng cách padding của container */
+    .v-container.fluid {
+        padding: 8px;
+    }
+
+    /* Điều chỉnh kích thước sidebar nhỏ lại */
+    .v-navigation-drawer--left, .v-navigation-drawer--right {
+        width: 200px !important;
+    }
+}
