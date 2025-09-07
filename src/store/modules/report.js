@@ -2,7 +2,7 @@ import {v4 as uuidv4} from 'uuid';
 import Vue from 'vue';
 
 const initialState = () => ({
-    layout: [], elements: [], selectedElementId: null,
+    layout: [], elements: [], selectedElementId: null, zoomLevel: 1.0
 });
 
 const state = initialState();
@@ -35,9 +35,28 @@ function createRowCells(headersLength = 1) {
 }
 
 const mutations = {
+    UPDATE_ZOOM_LEVEL(zoomLevel) {
+        state.zoomLevel = zoomLevel
+    },
+
     ADD_ELEMENT(state, payload) {
         state.layout.push(payload.layout);
         state.elements.push(payload.element);
+    },
+
+    CLONE_NEW_ELEMENT(state, {element, layoutItem}) {
+        const newElement = JSON.parse(JSON.stringify(element));
+        const newLayoutItem = JSON.parse(JSON.stringify(layoutItem));
+
+        const newId = uuidv4()
+        newElement.i = newId;
+        newLayoutItem.i = newId;
+        newLayoutItem.x += 1;
+        newLayoutItem.y += 1;
+
+        state.elements.push(newElement);
+        state.layout.push(newLayoutItem);
+        state.selectedElementId = newId;
     },
 
     REMOVE_ELEMENT(state, id) {
@@ -210,12 +229,26 @@ const mutations = {
             // trường hợp cell là primitive (cẩn thận): replace bằng object cell mới
             Vue.set(rows[rowIndex], colIndex, createCell());
         }
+    },
+
+    UPDATE_CELL(state, {tableId, rowIndex, colIndex, value}) {
+        const element = state.elements.find(el => el.i === tableId);
+        if (!element || !element.data || !Array.isArray(element.data.rows)) return;
+        const rows = element.data.rows;
+        if (!rows[rowIndex] || !Array.isArray(rows[rowIndex]) || rows[rowIndex][colIndex] === undefined) return;
+
+        const cell = rows[rowIndex][colIndex];
+        if (cell && typeof cell === 'object') {
+            // chỉ reset value (giữ nguyên id/type/format)
+            Vue.set(cell, 'value', value);
+        }
     }
-
-
 };
 
 const actions = {
+    updateZoomLevel({commit}, level) {
+        commit("UPDATE_ZOOM_LEVEL", level.value)
+    },
     addElement({commit, state}, type) {
         const newId = uuidv4();
         const newLayout = {
@@ -229,7 +262,7 @@ const actions = {
 
         if (type === 'title') {
             newElement.content = 'Tiêu đề mới';
-            newLayout.h = 2;
+            newLayout.h = 1.5;
         } else if (type === 'text') {
             newElement.content = 'Nội dung văn bản mới';
             newLayout.h = 1.5;
@@ -245,8 +278,14 @@ const actions = {
                 tableId: `tb-${uuidv4()}`,
                 headers: headers,
                 rows: rowsInit,
+                headerBorders: ["border-top", "border-bottom", "border-left", "border-right"],
+                headerBordersStyle: "dotted",
+                dataBorders: ["border-top", "border-bottom", "border-left", "border-right"],
+                dataBordersStyle: "dotted",
+                alignmentHeader: "left",
+                alignmentData: "left"
             };
-            newLayout.h = 6;
+            newLayout.h = 3;
         }
 
         commit('ADD_ELEMENT', {layout: newLayout, element: newElement});
@@ -255,6 +294,12 @@ const actions = {
         commit('REMOVE_ELEMENT', id);
     }, removeAllElements({commit}) {
         commit('REMOVE_ALL_ELEMENT')
+    }, cloneNewElement({commit, state}, selectedElementId) {
+        const element = state.elements.find(el => el.i === selectedElementId);
+        const layoutItem = state.layout.find(item => item.i === selectedElementId);
+        if (element && layoutItem) {
+            commit('CLONE_NEW_ELEMENT', {element, layoutItem});
+        }
     }, updateLayout({commit}, payload) {
         commit('UPDATE_LAYOUT', payload);
     }, selectElement({commit}, id) {
@@ -273,7 +318,9 @@ const actions = {
         commit('REMOVE_ROW', payload);
     }, removeCell({commit}, payload) {
         commit('REMOVE_CELL', payload);
-    },
+    }, updateCell({commit}, payload) {
+        commit('UPDATE_CELL', payload);
+    }
 };
 
 export default {

@@ -1,34 +1,35 @@
 <template>
   <v-app>
     <v-app-bar
-      app
-      color="red"
-      dark
+        app
+        color="red"
+        dark
+        dense
+        flat
     >
       <div class="d-flex align-center">
         <v-img
-          alt="Vuetify Logo"
-          class="shrink mr-2"
-          contain
-          src="https://cdn.vuetifyjs.com/images/logos/vuetify-logo-dark.png"
-          transition="scale-transition"
-          width="40"
+            alt="Vuetify Logo"
+            class="shrink mr-2"
+            contain
+            src="https://cdn.vuetifyjs.com/images/logos/vuetify-logo-dark.png"
+            transition="scale-transition"
+            width="40"
         />
-        <h1>Report Builder</h1>
+        <h3>Report Builder</h3>
       </div>
 
       <v-spacer></v-spacer>
 
       <v-btn
-        href="https://github.com/vuetifyjs/vuetify/releases/latest"
-        target="_blank"
-        text
+          href="https://github.com/vuetifyjs/vuetify/releases/latest"
+          target="_blank"
+          text
       >
         <span class="mr-2">Latest Release</span>
         <v-icon>mdi-open-in-new</v-icon>
       </v-btn>
     </v-app-bar>
-
     <v-main>
       <router-view/>
     </v-main>
@@ -36,7 +37,6 @@
 </template>
 
 <script>
-
 export default {
   name: 'App',
 
@@ -45,3 +45,5 @@ export default {
   }),
 };
 </script>
+<style scoped>
+</style>

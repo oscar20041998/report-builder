@@ -1,41 +1,25 @@
 <template>
   <v-app id="report-builder">
-    <v-navigation-drawer app clipped left permanent width="250">
+    <!-- Sidebar trái -->
+    <v-navigation-drawer app clipped left permanent width="60">
       <elements-panel/>
     </v-navigation-drawer>
+    <ToolBarControl/>
 
-    <v-navigation-drawer app clipped right permanent width="350">
+<!--     Sidebar phải-->
+    <v-navigation-drawer app right width="300">
+      <!-- nút toggle -->
+      <v-btn icon @click="showProperties = !showProperties" class="toggle-properties-btn">
+        <v-icon>{{ showProperties ? 'mdi-chevron-right' : 'mdi-chevron-left' }}</v-icon>
+      </v-btn>
       <properties-panel/>
     </v-navigation-drawer>
-    <div class="main-container">
-      <div class="fixed-toolbar">
-        <v-toolbar dense>
-          <v-spacer></v-spacer>
-          <v-btn text color="error" @click="removeAllElements">
-            <v-icon left>mdi-delete</v-icon>
-            Xóa tất cả
-          </v-btn>
-          <v-btn text color="primary" @click="saveReport">
-            <v-icon left>mdi-content-save</v-icon>
-            Lưu
-          </v-btn>
-          <v-btn text color="primary" @click="previewReport">
-            <v-icon left>mdi-eye</v-icon>
-            Xem trước
-          </v-btn>
-          <v-btn text color="primary" @click="showJson">
-            <v-icon left>mdi-code-json</v-icon>
-            Show JSON
-          </v-btn>
-          <v-btn text color="primary" @click="exportXlsx">
-            <v-icon left>mdi-microsoft-excel</v-icon>
-            Xuất file XLS
-          </v-btn>
-        </v-toolbar>
-      </div>
+
+    <!-- Grid Layout (scrollable) -->
+    <div class="grid-wrapper scrollable-grid-container">
       <grid-layout
           :layout.sync="layout"
-          :col-num="12"
+          :col-num="1000000"
           :row-height="25"
           :is-draggable="true"
           :is-resizable="true"
@@ -43,23 +27,18 @@
           :horizontal-compact="false"
           :margin="[10, 10]"
           use-css-transforms
-          class="scrollable-grid-container"
       >
         <grid-item
             v-for="item in layout"
+            v-bind="item"
             :key="item.i"
-            :x="item.x"
-            :y="item.y"
-            :w="item.w"
-            :h="item.h"
-            :i="item.i"
-            @resize="resizeEvent"
-            @move="moveEvent"
+            @resize="(i,h,w) => updateItem(i,{h,w})"
+            @move="(i,x,y) => updateItem(i,{x,y})"
             @click.native="selectElement(item.i)"
-            class="report-element"
+            class="report-element scrollable-item"
             :class="{ 'report-element--selected': item.i === selectedElementId }"
         >
-          <component :is="getComponent(item.type)" :element="getElement(item.i)"></component>
+          <component :is="componentMap[item.type]" :element="getElement(item.i)"/>
         </grid-item>
       </grid-layout>
     </div>
@@ -67,19 +46,21 @@
 </template>
 
 <script>
-import {mapActions, mapState} from 'vuex';
-import {GridItem, GridLayout} from 'vue-grid-layout';
+import {mapActions, mapState} from 'vuex'
+import {GridItem, GridLayout} from 'vue-grid-layout'
 
-import ReportTitle from '@/components/report-elements/ReportTitle.vue';
-import ReportText from '@/components/report-elements/ReportText.vue';
-import ReportTable from '@/components/report-elements/ReportTable.vue';
+import ReportTitle from '@/components/report-elements/ReportTitle.vue'
+import ReportText from '@/components/report-elements/ReportText.vue'
+import ReportTable from '@/components/report-elements/ReportTable.vue'
 
-import ElementsPanel from '@/components/sidebar/ElementsPanel.vue';
-import PropertiesPanel from '@/components/sidebar/PropertiesPanel.vue';
+import ElementsPanel from '@/components/sidebar/ElementsPanel.vue'
+import PropertiesPanel from '@/components/sidebar/PropertiesPanel.vue'
+import ToolBarControl from "@/components/sidebar/ToolBarControl.vue";
 
 export default {
   name: 'ReportBuilder',
   components: {
+    ToolBarControl,
     GridLayout,
     GridItem,
     ReportTitle,
@@ -89,84 +70,101 @@ export default {
     PropertiesPanel
   },
   computed: {
-    ...mapState('report', ['layout', 'elements', 'selectedElementId']),
+    ...mapState('report', ['layout', 'elements', 'selectedElementId', 'zoomLevel'])
+  },
+  data() {
+    return {
+      componentMap: {
+        title: 'ReportTitle',
+        text: 'ReportText',
+        table: 'ReportTable'
+      },
+      showProperties: true, // mặc định mở
+      toolbarButtons: [
+        {label: 'Xóa tất cả', icon: 'mdi-delete', color: 'error', action: () => this.removeAllElements()},
+        {label: 'Lưu', icon: 'mdi-content-save', color: 'primary', action: () => this.saveReport()},
+        {label: 'Xem trước', icon: 'mdi-eye', color: 'primary', action: () => this.previewReport()},
+        {label: 'Show JSON', icon: 'mdi-code-json', color: 'primary', action: () => this.showJson()},
+        {label: 'Xuất file XLS', icon: 'mdi-microsoft-excel', color: 'primary', action: () => this.exportXlsx()}
+      ]
+    }
   },
   methods: {
     ...mapActions('report', ['updateLayout', 'selectElement', 'removeAllElements']),
-    getComponent(type) {
-      switch (type) {
-        case 'title':
-          return 'ReportTitle';
-        case 'text':
-          return 'ReportText';
-        case 'table':
-          return 'ReportTable';
-        default:
-          return null;
-      }
-    },
     getElement(id) {
-      return this.elements.find(el => el.i === id);
+      return this.elements.find(el => el.i === id)
     },
-    resizeEvent(i, newH, newW) {
-      this.updateLayout({i, changes: {w: newW, h: newH}});
+    updateItem(i, changes) {
+      this.updateLayout({i, changes})
     },
-    moveEvent(i, newX, newY) {
-      this.updateLayout({i, changes: {x: newX, y: newY}});
+    scaledLayout() {
+      return this.layout.map(item => ({
+        ...item,
+        x: item.x * this.zoomLevel,
+        y: item.y * this.zoomLevel,
+        w: item.w * this.zoomLevel,
+        h: item.h * this.zoomLevel,
+      }));
     },
-    // Các phương thức mới cho v-bar
-    saveReport() {
-      // Logic để lưu báo cáo
-      console.log('Báo cáo đã được lưu.');
+    scaledColNum() {
+      return Math.floor(12 / this.zoomLevel);
     },
-    previewReport() {
-      // Logic để xem trước báo cáo
-      console.log('Chuyển sang chế độ xem trước.');
+    scaledRowHeight() {
+      return 30 * this.zoomLevel;
     },
-    showJson() {
-      // Logic để hiển thị JSON của báo cáo
-      console.log(JSON.stringify(this.elements, null, 2));
+    canvasWrapperStyle() {
+      return {
+        transform: `scale(${this.zoomLevel})`,
+        transformOrigin: 'top left',
+        width: `${100 / this.zoomLevel}%`,
+        height: `${100 / this.zoomLevel}%`,
+      };
     },
-    exportXlsx() {
-      // Logic để xuất file XLSX
-      console.log('Xuất file XLSX...');
-    }
   }
-};
+}
 </script>
 
 <style scoped>
-.main-container {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-}
-
-.fixed-toolbar {
-  flex-shrink: 0;
-}
-
 .scrollable-grid-container {
-  flex-grow: 1;
-  overflow: auto;
-  position: relative; /* Thêm position relative cho scrollbar */
-  background: lightgrey;
+  width: 100vw; /* chiếm toàn bộ chiều rộng màn hình */
+  height: 100vh; /* chiếm toàn bộ chiều cao màn hình */
+  overflow-x: auto; /* bật scroll ngang */
+  overflow-y: auto; /* bật scroll dọc */
+  box-sizing: border-box; /* tránh tràn do padding/border */
+  background: #cccccc;
 }
+
 .report-element {
-  background-color: #fff;
+  background: #fff;
   border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   padding: 8px;
   cursor: pointer;
   border: 2px solid transparent;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 100%;
 }
 
 .report-element:hover {
-  border-color: #1976D2;
+  border-color: #1976d2;
 }
 
 .report-element--selected {
-  border-color: #1976D2 !important;
+  border-color: #1976d2 !important;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.scrollable-item {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+}
+
+.toggle-properties-btn {
+  position: absolute;
+  top: 70px;   /* dưới AppBar */
+  right: 360px; /* sát cạnh drawer */
+  z-index: 999;
 }
 </style>

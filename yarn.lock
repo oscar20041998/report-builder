@@ -1688,6 +1688,8 @@
 
 "@vue/compiler-sfc@2.7.16":
   version "2.7.16"
+  resolved "https://registry.npmjs.org/@vue/compiler-sfc/-/compiler-sfc-2.7.16.tgz"
+  integrity sha512-KWhJ9k5nXuNtygPU7+t1rX6baZeqOYLEforUPjgNDBnLicfHCoi48H87Q8XyLZOrNNsmhuwKqtpDQWjEFe6Ekg==
   dependencies:
     "@babel/parser" "^7.23.5"
     postcss "^8.4.14"

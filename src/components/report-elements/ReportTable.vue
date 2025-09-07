@@ -7,73 +7,112 @@
           @input="updateTitle"
           placeholder="Nhập tiêu đề bảng"
       />
+
+      <v-btn-group class="ml-2">
+        <v-tooltip bottom>
+          <template v-slot:activator="{ on, attrs }">
+            <v-btn
+                icon
+                x-small
+                color="primary"
+                v-bind="attrs"
+                v-on="on"
+                :disabled="selectedElementId !== selectedElementId"
+                @click="addRow(selectedElementId)"
+            >
+              <v-icon small>mdi-table-row-plus-after</v-icon>
+            </v-btn>
+          </template>
+          <span>Thêm Hàng</span>
+        </v-tooltip>
+
+        <v-tooltip bottom>
+          <template v-slot:activator="{ on, attrs }">
+            <v-btn
+                icon
+                x-small
+                color="primary"
+                v-bind="attrs"
+                v-on="on"
+                :disabled="selectedElementId!=selectedElementId"
+                @click="addColumn(selectedElementId)"
+            >
+              <v-icon small>mdi-table-column-plus-after</v-icon>
+            </v-btn>
+          </template>
+          <span>Thêm Cột</span>
+        </v-tooltip>
+      </v-btn-group>
     </div>
-    <table class="report-table" :id="element.data.tableId">
-      <thead>
-      <tr :style="{ 'background-color': element.data.headerColor }">
-        <th v-for="(header, colIndex) in element.data.headers" :key="colIndex">
-          <div class="header-content">
+
+    <div class="table-container">
+      <table class="report-table" :id="element.data.tableId">
+        <thead>
+        <tr :style="{ 'background-color': element.data.headerColor }">
+          <th v-for="(header, colIndex) in element.data.headers" :key="colIndex">
+            <div class="header-content">
+              <input
+                  v-model="header.text"
+                  class="table-header-input"
+                  @input="updateHeader(colIndex, $event.target.value)"
+              />
+              <v-btn
+                  icon
+                  x-small
+                  @click="onRemoveColumn(colIndex)"
+                  class="close-btn"
+              >
+                <v-icon>mdi-close</v-icon>
+              </v-btn>
+            </div>
+          </th>
+          <th class="add-column-cell"></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr v-for="(row, rowIndex) in element.data.rows" :key="rowIndex">
+          <td
+              v-for="(cell, colIndex) in row"
+              :key="colIndex"
+              :style="{
+              'text-align': element.style.textAlignH,
+              'vertical-align': element.style.textAlignV,
+            }"
+              class="table-cell-wrapper"
+          >
             <input
-                v-model="header.text"
-                class="table-header-input"
-                @input="updateHeader(colIndex, $event.target.value)"
+                :value="cell.value"
+                class="table-cell-input"
+                @input="onUpdateCell(rowIndex, colIndex, $event.target.value)"
             />
             <v-btn
                 icon
                 x-small
-                @click="onRemoveColumn(colIndex)"
-                class="close-btn"
+                class="close-btn cell-remove-btn"
+                @click="onRemoveCell(rowIndex, colIndex)"
             >
               <v-icon>mdi-close</v-icon>
             </v-btn>
-          </div>
-        </th>
-        <th class="add-column-cell"></th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr v-for="(row, rowIndex) in element.data.rows" :key="rowIndex">
-        <td
-            v-for="(cell, colIndex) in row"
-            :key="colIndex"
-            :style="{
-              'text-align': element.style.textAlignH,
-              'vertical-align': element.style.textAlignV,
-            }"
-            class="table-cell-wrapper"
-        >
-          <input
-              :value="cell.value"
-              class="table-cell-input"
-              @input="onUpdateCell(rowIndex, colIndex, $event.target.value)"
-          />
-          <v-btn
-              icon
-              x-small
-              class="close-btn cell-remove-btn"
-              @click="onRemoveCell(rowIndex, colIndex)"
-          >
-            <v-icon>mdi-close</v-icon>
-          </v-btn>
-        </td>
-        <td class="add-row-cell">
-          <v-btn
-              icon
-              x-small
-              class="close-btn"
-              @click="onRemoveRow(rowIndex)"
-          >
-            <v-icon>mdi-close</v-icon>
-          </v-btn>
-        </td>
-      </tr>
-      </tbody>
-    </table>
+          </td>
+          <td class="add-row-cell">
+            <v-btn
+                icon
+                x-small
+                class="close-btn"
+                @click="onRemoveRow(rowIndex)"
+            >
+              <v-icon>mdi-close</v-icon>
+            </v-btn>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
 
 <script>
-import { mapActions } from 'vuex';
+import {mapActions, mapState} from 'vuex';
 
 export default {
   name: 'ReportTable',
@@ -88,11 +127,19 @@ export default {
       title: this.element.data.title,
     };
   },
+  computed: {
+    ...mapState('report', ['elements', 'selectedElementId']),
+    selectedElement() {
+      return this.elements.find(el => el.i === this.selectedElementId);
+    },
+  },
   methods: {
     ...mapActions('report', [
       'updateCell',
       'updateElement',
       'updateTableHeaders',
+      'addRow',
+      'addColumn',
       'removeColumn',
       'removeRow',
       'removeCell',
@@ -102,7 +149,7 @@ export default {
       this.updateElement({
         id: this.element.i,
         field: 'data',
-        value: { ...this.element.data, title: this.title },
+        value: {...this.element.data, title: this.title},
       });
     },
 
@@ -112,7 +159,7 @@ export default {
       this.updateElement({
         id: this.element.i,
         field: 'data',
-        value: { ...this.element.data, headers },
+        value: {...this.element.data, headers},
       });
     },
 
@@ -151,123 +198,168 @@ export default {
 </script>
 
 <style scoped>
+.table-container {
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
 .report-table-container {
-  width: 100%;
+  max-width: 100%;
   height: 100%;
   overflow: auto;
+  font-size: 10px; /* font-size chung cho toàn bộ table */
 }
+
 .table-title-wrapper {
-  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
   background-color: #f5f5f5;
   border-bottom: 1px solid #e0e0e0;
 }
+
 .table-title-input {
-  width: 100%;
+  flex: 1;
   border: none;
   background-color: transparent;
-  font-size: 1.25rem;
+  font-size: 0.9rem;
   font-weight: bold;
-  padding: 4px;
+  padding: 4px 6px;
+  outline: none;
 }
+
+
 .report-table {
   width: 100%;
   border-collapse: collapse;
+  font-size: 10px;
 }
+
 .report-table th,
 .report-table td {
   border: 1px solid #ccc;
-  padding: 8px;
-  position: relative;
+  padding: 4px; /* giảm từ 8px -> 4px */
+  max-width: 25px;
+  max-height: 20px;
+  min-width: 20px;
 }
+
 .report-table th {
   background: black;
   color: white;
   text-align: left;
+  font-size: 10px;
 }
+
 .table-header-input,
 .table-cell-input {
   width: 100%;
   border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 8px;
+  border-radius: 3px;
+  padding: 2px 4px; /* nhỏ gọn lại */
   box-sizing: border-box;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   background-color: white;
+  font-size: 10px;
+  line-height: 1.2;
 }
+
 .table-header-input {
   color: white;
   background-color: transparent;
   border-color: transparent;
+  font-weight: bold;
 }
+
 .table-header-input:focus {
   background-color: rgba(255, 255, 255, 0.1);
   border-color: white;
 }
+
 .table-header-input:hover {
-  box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 3px rgba(255, 255, 255, 0.5);
 }
+
 .table-cell-input {
   background-color: #fff;
 }
+
 .table-cell-input:focus {
   border-color: #2196f3;
-  box-shadow: 0 0 5px rgba(33, 150, 243, 0.5);
+  box-shadow: 0 0 3px rgba(33, 150, 243, 0.5);
 }
+
 .table-cell-input:hover {
-  box-shadow: 0 0 5px rgba(33, 150, 243, 0.5);
+  box-shadow: 0 0 3px rgba(33, 150, 243, 0.5);
 }
+
 .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
   position: relative;
+  font-size: 10px;
 }
+
 .add-column-cell,
 .add-row-cell {
-  width: 24px;
+  width: 20px; /* thu nhỏ nút thêm */
 }
+
 .close-btn {
   visibility: hidden;
   position: absolute;
   top: 50%;
-  right: 4px;
+  right: 2px;
   transform: translateY(-50%);
   background-color: rgba(255, 255, 255, 0.7);
   border-radius: 50%;
 }
+
 th:hover .close-btn,
 tr:hover .close-btn,
 .table-cell-wrapper:hover .close-btn {
   visibility: visible;
 }
+
 .close-btn .v-icon {
   color: black !important;
-  font-size: 16px !important;
+  font-size: 12px !important;
 }
+
 .header-content .close-btn {
   background-color: transparent;
 }
+
 .header-content .close-btn .v-icon {
   color: white !important;
 }
+
 .header-content:hover .close-btn {
   background-color: white;
 }
+
 .header-content:hover .close-btn .v-icon {
   color: black !important;
 }
+
 .table-cell-wrapper {
   position: relative;
+  font-size: 10px;
 }
+
 .cell-remove-btn {
   background-color: rgba(255, 255, 255, 0.7);
   border-radius: 50%;
   position: absolute;
   top: 50%;
-  right: 4px;
+  right: 2px;
   transform: translateY(-50%);
 }
+
 .cell-remove-btn .v-icon {
   color: #f44336 !important;
+  font-size: 12px !important;
 }
 </style>

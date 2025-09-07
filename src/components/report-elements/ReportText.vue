@@ -1,5 +1,5 @@
 <template>
-  <p :style="textStyle">{{ element.content }}</p>
+  <span :style="textStyle">{{ element.content }}</span>
 </template>
 
 <script>

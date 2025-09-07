@@ -1,5 +1,5 @@
 <template>
-  <h1 :style="titleStyle">{{ element.content }}</h1>
+  <h2 :style="titleStyle">{{ element.content }}</h2>
 </template>
 
 <script>
@@ -38,7 +38,7 @@ export default {
 
 <style scoped>
 /* Các style cục bộ cho component, tránh ảnh hưởng đến các phần khác */
-h1 {
-  margin: 0;
+h4 {
+  padding-top: 0;
 }
 </style>
